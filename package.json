@@ -1,0 +1,19 @@
+{
+  "name": "jotform-bitrix24-integration",
+  "version": "1.0.0",
+  "description": "Receive Jotform submissions and create Contacts in Bitrix24 CRM",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}
