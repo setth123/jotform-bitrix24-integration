@@ -43,6 +43,8 @@ src/
 - Tài khoản Jotform và Bitrix24
 - Một URL public để Jotform gọi tới (khi chạy local có thể dùng [ngrok](https://ngrok.com/))
 
+> **Lưu ý:** Jotform đang bị chặn tại Việt Nam. Cần bật **VPN** để truy cập form Jotform, và máy chạy ứng dụng này cũng phải có VPN (hoặc đặt ở server ngoài Việt Nam) thì mới gọi được Jotform API. Nếu không, log sẽ báo lỗi `Cannot connect to Jotform API: fetch failed` (`Connection reset by peer`).
+
 ## 1. Thiết lập Jotform và lấy API Key
 
 1. Đăng ký/đăng nhập Jotform bằng email được mời.
