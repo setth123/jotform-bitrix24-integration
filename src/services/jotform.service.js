@@ -1,4 +1,5 @@
 const logger = require('../utils/logger');
+const { withRetry, httpError, isRetryableStatus } = require('../utils/retry');
 
 const REQUEST_TIMEOUT_MS = 10000;
 
@@ -8,7 +9,11 @@ const REQUEST_TIMEOUT_MS = 10000;
  * @param {string} submissionId
  * @returns {Promise<object>} the submission object (contains `answers`)
  */
-async function getSubmission(submissionId) {
+function getSubmission(submissionId) {
+  return withRetry(() => fetchSubmission(submissionId), { label: 'Jotform getSubmission' });
+}
+
+async function fetchSubmission(submissionId) {
   const baseUrl = process.env.JOTFORM_API_URL || 'https://api.jotform.com';
   const url = `${baseUrl}/submission/${encodeURIComponent(submissionId)}`;
 
@@ -20,16 +25,19 @@ async function getSubmission(submissionId) {
     });
   } catch (err) {
     // Network error, DNS failure or timeout.
-    throw new Error(`Cannot connect to Jotform API: ${err.message}`);
+    throw httpError(`Cannot connect to Jotform API: ${err.message}`, true);
   }
 
   if (response.status === 401 || response.status === 403) {
-    throw new Error('Jotform authentication failed: check JOTFORM_API_KEY');
+    throw httpError('Jotform authentication failed: check JOTFORM_API_KEY', false);
   }
 
   const body = await response.json().catch(() => null);
   if (!response.ok || !body || body.responseCode !== 200) {
-    throw new Error(`Jotform API error (HTTP ${response.status}): ${body?.message || 'invalid response'}`);
+    throw httpError(
+      `Jotform API error (HTTP ${response.status}): ${body?.message || 'invalid response'}`,
+      isRetryableStatus(response.status)
+    );
   }
 
   logger.info('Fetched submission from Jotform', { submissionId });

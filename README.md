@@ -87,6 +87,8 @@ Nội dung `.env`:
 | `JOTFORM_API_KEY`      | API Key lấy ở bước 1                                    |
 | `JOTFORM_API_URL`      | `https://api.jotform.com` (hoặc `eu-api` cho tài khoản EU) |
 | `BITRIX24_WEBHOOK_URL` | URL webhook lấy ở bước 2                                |
+| `LOG_MAX_SIZE_MB`      | (tuỳ chọn) Kích thước tối đa của `app.log` trước khi xoay vòng, mặc định `5` |
+| `LOG_MAX_FILES`        | (tuỳ chọn) Số file log cũ giữ lại (`app.log.1` … `app.log.N`), mặc định `5` |
 
 Kiểm tra server: `curl http://localhost:3000/health` → `{"status":"ok"}`
 
@@ -111,6 +113,12 @@ Mọi hoạt động được ghi ra console và file `logs/app.log`, ví dụ:
 [2026-10-08T03:12:01.910Z] [INFO] Created Bitrix24 contact {"contactId":42}
 [2026-10-08T03:12:01.911Z] [INFO] Submission synced to Bitrix24 {"submissionID":"6012345678901234567","contactId":42}
 ```
+
+## Chống trùng, retry và xoay vòng log
+
+- **Chống trùng theo submission ID:** mỗi `submissionID` đã đồng bộ thành công được lưu vào `data/processed-submissions.json` (giữ tối đa 10.000 ID gần nhất, còn sau khi restart). Jotform gửi lại cùng ID thì bỏ qua ngay, không gọi API nào và trả lại `contactId` cũ với `duplicate: true`. Các webhook đồng thời cùng ID được gộp thành một lần xử lý. ID chỉ được lưu khi thành công, nên lần lỗi vẫn thử lại được.
+- **Retry:** lỗi mạng, timeout, HTTP 429/5xx và `QUERY_LIMIT_EXCEEDED` được thử lại tối đa 3 lần (chờ 0.5s → 1s → 2s) cho cả Jotform và Bitrix24. Lỗi 4xx/sai API key không retry. Timeout khi gọi Bitrix24 không được thử lại (có thể contact đã được tạo), tránh tạo contact kép.
+- **Xoay vòng log:** khi `logs/app.log` đạt `LOG_MAX_SIZE_MB` sẽ đổi thành `app.log.1`, các file cũ dồn lên, file vượt `LOG_MAX_FILES` bị xoá.
 
 ## Xử lý lỗi
 
